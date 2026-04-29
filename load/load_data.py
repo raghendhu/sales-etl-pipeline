@@ -1,18 +1,15 @@
-import pyodbc
+from sqlalchemy import create_engine
+import urllib
 def load(df):
-    conn=pyodbc.connect(
+    conn=(
        "Driver={ODC Driver `8 for SQL Server};"
         "Server=localhost;"
-        "DATABASE=sales_etl;"
+        "DATABASE=SSIS_Tasks;"
         "Trusted_Connection=yes;"
     )
+    quoted_conn = urllib.parse.quote_plus(conn)
+    engine = create_engine(f"mssql+pyodbc:///?odbc_connect={quoted_conn}")
 
-    cursor=conn.cursor()
+    df.to_sql('SALES_FULL_REPORT', schema='dbo', con=engine, if_exists='replace', index=False)
 
-    for index,row in df.iterrows():
-        cursor.execute("""INSERT INTO SALES(Product,Quantity,Price,Total_Amount)
-                       VALUES (?,?,?,?)""",row['Product'],row['Quantity'],row['Price'],row['Total_Amount']
-                       )
-        
-    conn.commit()
-    conn.close()
+    print(f"✅ Success! Table created with {len(df.columns)} columns and {len(df)} rows.")
